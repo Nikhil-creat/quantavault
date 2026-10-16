@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>QuantaVault – Post-quantum private data vault</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.groq.com; base-uri 'none'; form-action 'none'">
-<meta name="theme-color" content="#060a14"><meta name="description" content="Zero-knowledge encrypted vault with agentic AI, RAG and CNN file inspection."><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="logo.svg"><link rel="stylesheet" href="style.css"></head><body>
+<meta name="theme-color" content="#060a14"><meta name="description" content="Zero-knowledge encrypted vault with agentic AI, RAG and CNN file inspection."><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="logo.svg"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
 <header class="wrap"><nav><a class="logo" href="#"><img src="logo.svg" alt="" width="34" height="34">QuantaVault</a><span id="net" class="status"></span></nav>
 <h1>Private data storage built for the post-quantum era.</h1>
 <p class="lead">Zero-knowledge encryption, passkey login, an agentic AI security assistant with retrieval (RAG), and neural file inspection, all containerised with Docker.</p>
@@ -14,7 +14,7 @@
 <label for="bi">Restore from backup (.json)</label><input type="file" id="bi" accept=".json"><div id="ust" class="status" role="status"></div></div>
 <div id="open" hidden>
 <div class="stats"><div class="card"><b id="s1">0</b><span>files</span></div><div class="card"><b id="s2">0 B</b><span>stored</span></div><div class="card"><b id="s3">-</b><span>last added</span></div><div class="card"><b id="pks">off</b><span>passkey</span></div></div>
-<div id="add" class="panel"><h3>Add files</h3><input type="file" id="af" multiple aria-label="Files to encrypt"><button id="addb">Encrypt and store</button>
+<div id="add" class="panel"><h3>Add files</h3><div id="drop" class="drop"><p>Tap to choose files (they are encrypted and stored right away), or drop them here</p><input type="file" id="af" multiple aria-label="Files to encrypt"></div><div class="btns"><button id="cb" class="alt">Take photo</button><button id="addb" class="alt">Encrypt selected again</button></div><input type="file" id="cam" accept="image/*" capture="environment" hidden>
 <label for="nt">Or write a secure note</label><input id="nt" placeholder="Note title"><textarea id="nc" placeholder="Note text" rows="3"></textarea><button id="nsave" class="alt">Save encrypted note</button><div id="ast" class="status" role="status"></div></div>
 <div id="library" class="panel"><h3>Library</h3><input id="fq" placeholder="Search your files" aria-label="Search files"><div id="lib" class="lib"></div>
 <div id="vwb" class="viewer" hidden><b id="vwt"></b><pre id="vw"></pre><img id="vi" alt="Decrypted preview" hidden><button id="vx" class="alt">Close</button></div></div>
@@ -23,9 +23,13 @@
 <div class="panel"><h3>Tamper-evident audit log</h3><div id="log" class="out"></div><div class="btns"><button id="lv" class="alt">Verify chain</button><button id="lt" class="alt">Tamper test</button></div><div id="lst" class="status" role="status"></div></div>
 </div></section>
 
-<section id="agent"><h2>VaultMind: agentic security assistant</h2><p class="sub">Runs on Groq's free tier. It plans, calls tools (knowledge search, passphrase generator, vault stats) and answers from retrieved docs. Get a key at console.groq.com/keys. It is stored only in this browser and sent only to api.groq.com. Press / to jump to the chat box.</p>
-<div class="panel"><div class="row"><input id="key" type="password" placeholder="Groq API key (gsk_...)" aria-label="Groq API key" autocomplete="off"><button id="savekey" class="alt">Save and test key</button></div><div id="kst" class="status" role="status"></div>
-<div id="chat" class="chat" aria-live="polite"></div><div class="row"><input id="q" placeholder="Ask: How is my data protected?" aria-label="Message"><button id="send">Send</button></div></div></section>
+<section id="agent"><h2>AI assistants</h2>
+<div class="tabs" role="tablist"><button id="m1" class="tab on" role="tab">VaultMind (security)</button><button id="m2" class="tab" role="tab">Personal assistant</button></div>
+<p id="mdesc" class="sub"></p>
+<div class="panel"><div class="row"><input id="key" type="password" placeholder="Groq API key (gsk_...)" aria-label="Groq API key" autocomplete="off"><button id="savekey" class="alt">Save and test key</button></div><div id="kst" class="status" role="status">Free key: console.groq.com/keys. Stored only in this browser.</div>
+<div id="chat" class="chat" aria-live="polite"></div><div id="qc" class="chips"></div><div class="row"><input id="q" placeholder="Type a message (press / to jump here)" aria-label="Message"><button id="send">Send</button></div>
+<div class="row"><select id="vl" aria-label="Voice language"><option value="en-IN">English</option><option value="te-IN">Telugu</option><option value="hi-IN">Hindi</option></select><button id="mic" class="alt">Speak</button></div><label class="chk"><input type="checkbox" id="spk"> Read replies aloud</label></div>
+<div id="tasks" class="panel" hidden><h3>My tasks (encrypted)</h3><div id="tl"></div></div></section>
 
 <section id="tools"><h2>Tools</h2><div class="grid">
 <div class="panel"><h3>Passphrase generator</h3><select id="gl" aria-label="Length"><option>16</option><option selected>20</option><option>32</option></select><button id="gb">Generate</button><div id="go" class="out"></div><div class="btns"><button id="gc" class="alt">Copy</button></div><div id="gs" class="status"></div></div>

@@ -18,6 +18,9 @@ Client-side AES-256-GCM text and file encryption (.qvault), passkey demo, hash-c
 ## v3 additions
 Unlockable encrypted library (files and notes stored encrypted in IndexedDB, names encrypted too), passkey second factor, auto-lock, encrypted backup/restore, quick-action bar, keyboard shortcuts (/ and L), passphrase generator, Groq key test with clear errors, retries and timeouts, offline indicator, FAQ.
 
+## v5 additions
+Files are now encrypted the moment you pick them (progress and clear errors), camera capture, drag and drop, persistent-storage request, shortcut buttons explain when the vault is locked. New "Quanta" personal assistant (date/time, calculator, timers, encrypted to-do list and notes, voice in/out) beside VaultMind.
+
 ## Notes
 - Pages hosts only the static site. The chatbot calls Groq straight from the browser with the key each visitor pastes (kept in their localStorage). Never commit your own key.
 - The FastAPI backend (RAG, CNN, server-side agent) needs a host that runs Docker, such as Render or Fly.io free tiers.
