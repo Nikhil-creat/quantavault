@@ -62,12 +62,13 @@ const m=JSON.parse(D.decode(await dcr(KEY,r.niv,r.nct))),pt=new Uint8Array(await
 if(a==="view"&&(m.type.startsWith("text/")||m.type.startsWith("image/"))){const img=m.type.startsWith("image/");$("vwt").textContent=m.name;$("vw").hidden=img;$("vi").hidden=!img;if(img){if($("vi").src)URL.revokeObjectURL($("vi").src);$("vi").src=URL.createObjectURL(new Blob([pt],{type:m.type}))}else $("vw").textContent=D.decode(pt);$("vwb").hidden=false;$("vwb").scrollIntoView()}
 else save(pt,m.name,m.type);audit("opened file");arm()}catch(x){msg("ast","Could not decrypt: "+x.message,"bad")}};
 $("vx").onclick=()=>{$("vwb").hidden=true;$("vw").textContent="";if($("vi").src){URL.revokeObjectURL($("vi").src);$("vi").removeAttribute("src")}};
-$("bx").onclick=async()=>{const m=await dbGet("meta","vault"),rows=await dbAll("files");save(E.encode(JSON.stringify({v:1,meta:{salt:b64(m.salt),iv:b64(m.v.iv),ct:b64(m.v.ct)},files:rows.map(r=>({id:r.id,t:r.t,size:r.size,iv:b64(r.iv),ct:b64(r.ct),niv:b64(r.niv),nct:b64(r.nct)}))})),"quantavault-backup.json","application/json");audit("backup exported");msg("ast","Encrypted backup downloaded.","ok")};
+$("bx").onclick=async()=>{const m=await dbGet("meta","vault"),rows=await dbAll("files"),tk=await dbGet("meta","tasks");save(E.encode(JSON.stringify({v:2,tasks:tk?{iv:b64(tk.iv),ct:b64(tk.ct)}:null,meta:{salt:b64(m.salt),iv:b64(m.v.iv),ct:b64(m.v.ct)},files:rows.map(r=>({id:r.id,t:r.t,size:r.size,iv:b64(r.iv),ct:b64(r.ct),niv:b64(r.niv),nct:b64(r.nct)}))})),"quantavault-backup.json","application/json");audit("backup exported");msg("ast","Encrypted backup (files and tasks) downloaded.","ok")};
 $("bi").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),m=await dbGet("meta","vault");
 if(m&&b64(m.salt)!==j.meta.salt)return msg("ust","Backup is from a different vault.","bad");
 if(!m)await dbPut("meta",{k:"vault",salt:unb(j.meta.salt),v:{iv:unb(j.meta.iv),ct:unb(j.meta.ct)}});
 for(const r of j.files)await dbPut("files",{id:r.id,t:r.t,size:r.size,iv:unb(r.iv),ct:unb(r.ct),niv:unb(r.niv),nct:unb(r.nct)});
-msg("ust","Imported "+j.files.length+" files. Now unlock with the original passphrase.","ok")}catch(x){msg("ust","Invalid backup file.","bad")}};
+let tn="";const tk=await dbGet("meta","tasks");if(j.tasks){if(tk)tn=" Tasks already on this device were kept.";else{await dbPut("meta",{k:"tasks",iv:unb(j.tasks.iv),ct:unb(j.tasks.ct)});tn=" Tasks restored."}}
+msg("ust","Imported "+j.files.length+" files."+tn+" Now unlock with the original passphrase.","ok")}catch(x){msg("ust","Invalid backup file.","bad")}};
 $("wipe").onclick=async()=>{if(confirm("Erase ALL vault data on this device? This cannot be undone.")){await dbClr("files");await dbClr("meta");localStorage.removeItem("pk");localStorage.removeItem("qvlog");location.reload()}};
 /* tools */
 $("gb").onclick=()=>{const p=gen(+$("gl").value);$("go").textContent=p;msg("gs",Math.round(+$("gl").value*6)+" bits of entropy. Store it in a password manager or on paper.","ok")};

@@ -21,6 +21,9 @@ Unlockable encrypted library (files and notes stored encrypted in IndexedDB, nam
 ## v5 additions
 Files are now encrypted the moment you pick them (progress and clear errors), camera capture, drag and drop, persistent-storage request, shortcut buttons explain when the vault is locked. New "Quanta" personal assistant (date/time, calculator, timers, encrypted to-do list and notes, voice in/out) beside VaultMind.
 
+## v6
+Encrypted backup now includes your to-do list (tasks) as well as files. Restoring keeps tasks already on the device if any exist.
+
 ## Notes
 - Pages hosts only the static site. The chatbot calls Groq straight from the browser with the key each visitor pastes (kept in their localStorage). Never commit your own key.
 - The FastAPI backend (RAG, CNN, server-side agent) needs a host that runs Docker, such as Render or Fly.io free tiers.
