@@ -24,13 +24,13 @@ $("lv").onclick=async()=>{let p=LOG.length?LOG[0].prev:"";for(let i=0;i<LOG.leng
 $("lt").onclick=()=>{if(LOG.length<2)return msg("lst","Need 2+ events first.");LOG[LOG.length-2].ev="edited";draw();msg("lst","An entry was edited in memory. Press Verify chain.")};
 /* lock / unlock */
 function show(){const o=!!KEY;$("locked").hidden=o;$("open").hidden=!o;$("qlock").textContent=o?"Lock":"Unlock";$("pks").textContent=localStorage.getItem("pk")?"on":"off"}
-async function unlock(){const pw=$("mp").value;if(pw.length<8)return msg("ust","Use at least 8 characters.","bad");msg("ust","Working...");
+async function unlock(){const pw=$("mp").value,w=lockLeft();if(w)return msg("ust","Too many wrong attempts. Try again in "+Math.ceil(w/1000)+" seconds.","bad");if(pw.length<8)return msg("ust","Use at least 8 characters.","bad");msg("ust","Working...");
 try{const m=await dbGet("meta","vault");if(fails)await sleep(Math.min(fails,5)*1000);
 if(!m){const salt=crypto.getRandomValues(new Uint8Array(16)),k=await derive(pw,salt);await dbPut("meta",{k:"vault",salt,v:await enc(k,E.encode("QV-OK"))});KEY=k;audit("vault created")}
-else{const k=await derive(pw,m.salt);try{await dcr(k,m.v.iv,m.v.ct)}catch(e){fails++;audit("failed unlock");return msg("ust","Wrong passphrase.","bad")}
+else{const k=await derive(pw,m.salt);try{await dcr(k,m.v.iv,m.v.ct)}catch(e){bumpFail();audit("failed unlock");return msg("ust","Wrong passphrase.","bad")}
 const pk=localStorage.getItem("pk");if(pk){msg("ust","Confirm with your passkey...");try{await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:unb(pk)}],userVerification:"preferred",timeout:6e4}})}catch(e){return msg("ust","Passkey check failed ("+e.name+"). Try again, or use Disable passkey.","bad")}}
 KEY=k;audit("unlocked")}
-fails=0;$("mp").value="";msg("ust","");show();await render();arm();showTasks();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}catch(e){msg("ust","Error: "+e.message,"bad")}}
+localStorage.removeItem("qvfail");$("mp").value="";msg("ust","");show();await render();arm();showTasks();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}catch(e){msg("ust","Error: "+e.message,"bad")}}
 function lock(){KEY=null;clearTimeout(timer);$("lib").replaceChildren();$("vwb").hidden=true;$("vw").textContent="";show();showTasks();audit("locked")}
 function arm(){clearTimeout(timer);const m=+$("al").value;if(KEY&&m)timer=setTimeout(lock,m*6e4)}
 $("ub").onclick=unlock;$("mp").onkeydown=e=>{if(e.key==="Enter")unlock()};$("lk").onclick=lock;
@@ -172,6 +172,27 @@ mean/=M*M;const y2=$("c2").getContext("2d"),i2=y2.createImageData(M,M);for(let i
 const v=H>7.6?"Uniform noise: looks encrypted or compressed.":H>6?"Mixed content: likely a binary or media file.":"Structured: likely readable text or simple data.";
 $("verdict").textContent=`${f.name}: entropy ${H.toFixed(2)} / 8 bits, mean edge response ${mean.toFixed(2)}. ${v}`};
 
+
+/* ---- v7: lockout, strength, change passphrase, background lock, usage ---- */
+function lockLeft(){try{return Math.max(0,(JSON.parse(localStorage.getItem("qvfail")||"{}").until||0)-Date.now())}catch(e){return 0}}
+function bumpFail(){let o={};try{o=JSON.parse(localStorage.getItem("qvfail")||"{}")}catch(e){}o.n=(o.n||0)+1;o.until=o.n>=3?Date.now()+Math.min(2**(o.n-3)*3e4,36e5):0;try{localStorage.setItem("qvfail",JSON.stringify(o))}catch(e){}}
+const est=p=>{let c=0;if(/[a-z]/.test(p))c+=26;if(/[A-Z]/.test(p))c+=26;if(/\d/.test(p))c+=10;if(/[^A-Za-z0-9]/.test(p))c+=32;return Math.round(p.length*Math.log2(c||1))};
+const meter=(id,p)=>{if(!p){msg(id,"");return}const b=est(p);msg(id,"Rough strength: "+b+" bits ("+(b>=80?"strong":b>=55?"fair":"weak")+"). Long random phrases are best.",b>=80?"ok":b<55?"bad":"")};
+$("mp").oninput=()=>meter("mps",$("mp").value);$("np").oninput=()=>meter("nps",$("np").value);
+$("cp").onclick=async()=>{if(!KEY)return;const op=$("op").value,np=$("np").value;if(np.length<12)return msg("pst","New passphrase needs at least 12 characters.","bad");if(np===op)return msg("pst","New passphrase must differ from the current one.","bad");
+try{const m=await dbGet("meta","vault");try{await dcr(await derive(op,m.salt),m.v.iv,m.v.ct)}catch(e){return msg("pst","Current passphrase is wrong.","bad")}
+if(!confirm("Re-encrypt everything with the new passphrase? Keep this page open until it finishes."))return;msg("pst","Re-encrypting, please wait...");
+const salt=crypto.getRandomValues(new Uint8Array(16)),nk=await derive(np,salt),rows=await dbAll("files"),nr=[];
+for(const r of rows){const pt=new Uint8Array(await dcr(KEY,r.iv,r.ct)),mt=new Uint8Array(await dcr(KEY,r.niv,r.nct)),a=await enc(nk,pt),b=await enc(nk,mt);nr.push({...r,iv:a.iv,ct:a.ct,niv:b.iv,nct:b.ct})}
+const tk=await dbGet("meta","tasks");let nt=null;if(tk){const e=await enc(nk,new Uint8Array(await dcr(KEY,tk.iv,tk.ct)));nt={k:"tasks",iv:e.iv,ct:e.ct}}
+const v=await enc(nk,E.encode("QV-OK")),d=await db;
+await new Promise((res,rej)=>{const t=d.transaction(["files","meta"],"readwrite");nr.forEach(r=>t.objectStore("files").put(r));t.objectStore("meta").put({k:"vault",salt,v});if(nt)t.objectStore("meta").put(nt);t.oncomplete=res;t.onerror=t.onabort=()=>rej(t.error||new Error("write failed"))});
+KEY=nk;$("op").value="";$("np").value="";msg("nps","");audit("passphrase changed");msg("pst","Passphrase changed. Old backups need the old passphrase, so export a fresh backup now.","ok");await render()}catch(e){msg("pst","Change failed, nothing was modified: "+e.message,"bad")}};
+$("bg").checked=localStorage.getItem("qvbg")!=="0";$("bg").onchange=()=>localStorage.setItem("qvbg",$("bg").checked?"1":"0");
+let hid=0;document.addEventListener("visibilitychange",()=>{if(document.hidden)hid=Date.now();else if(KEY&&hid&&$("bg").checked&&Date.now()-hid>3e4)lock()});
+async function usage(){try{const e=await navigator.storage.estimate();$("su").textContent="Browser storage used: "+fmt(e.usage||0)+" of about "+fmt(e.quota||0)}catch(x){}}
+const r0=render;render=async function(){await r0();usage()};
+const gc0=$("gc").onclick;$("gc").onclick=async()=>{await gc0();setTimeout(()=>{try{navigator.clipboard.writeText("")}catch(e){}},3e4);msg("gs","Copied. Clipboard is cleared in 30 seconds.","ok")};
 
 draw();show();
 dbGet("meta","vault").then(m=>{$("ub").textContent=m?"Unlock":"Create vault"}).catch(e=>msg("ust",e.message+". Private browsing may block storage.","bad"));

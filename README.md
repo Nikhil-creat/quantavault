@@ -24,6 +24,12 @@ Files are now encrypted the moment you pick them (progress and clear errors), ca
 ## v6
 Encrypted backup now includes your to-do list (tasks) as well as files. Restoring keeps tasks already on the device if any exist.
 
+## v7
+Change passphrase (atomic re-encryption of files, names and tasks), persistent unlock lockout, strength meter, lock-when-backgrounded, storage usage, clipboard auto-clear, CI workflow and backend unit tests.
+
+## Roadmap (not built yet)
+Hybrid ML-KEM + X25519 key exchange, server-side passkey verification, multi-device encrypted sync, a trained CNN model.
+
 ## Notes
 - Pages hosts only the static site. The chatbot calls Groq straight from the browser with the key each visitor pastes (kept in their localStorage). Never commit your own key.
 - The FastAPI backend (RAG, CNN, server-side agent) needs a host that runs Docker, such as Render or Fly.io free tiers.
