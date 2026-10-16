@@ -1,33 +1,43 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>QuantaVault – Post-quantum private data vault</title><link rel="icon" href="logo.svg"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.groq.com; base-uri 'none'; form-action 'none'"><meta name="theme-color" content="#060a14"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css"></head><body>
-<header class="wrap"><nav><a class="logo" href="#"><img src="logo.svg" alt="" width="34" height="34">QuantaVault</a><div><a href="#demo">Encrypt</a><a href="#vault">Vault</a><a href="#agent">AI Agent</a><a href="#cnn">CNN scan</a><a href="#stack">Stack</a></div></nav>
+<title>QuantaVault – Post-quantum private data vault</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.groq.com; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#060a14"><meta name="description" content="Zero-knowledge encrypted vault with agentic AI, RAG and CNN file inspection."><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="logo.svg"><link rel="stylesheet" href="style.css"></head><body>
+<header class="wrap"><nav><a class="logo" href="#"><img src="logo.svg" alt="" width="34" height="34">QuantaVault</a><span id="net" class="status"></span></nav>
 <h1>Private data storage built for the post-quantum era.</h1>
 <p class="lead">Zero-knowledge encryption, passkey login, an agentic AI security assistant with retrieval (RAG), and neural file inspection, all containerised with Docker.</p>
-<div class="chips"><span>AES-256-GCM</span><span>PBKDF2 250k</span><span>ML-KEM ready</span><span>WebAuthn</span><span>Agentic AI</span><span>RAG</span><span>CNN</span><span>Docker</span></div></header>
+<div class="chips"><span>AES-256-GCM</span><span>PBKDF2 250k</span><span>WebAuthn</span><span>Agentic AI</span><span>RAG</span><span>CNN</span><span>Docker</span><span>PWA</span></div></header>
+<div id="quick" role="toolbar" aria-label="Shortcuts"><div class="wrap qrow"><button data-go="#vault">Vault</button><button data-go="#add">Add file</button><button data-go="#library">Library</button><button data-go="#agent">AI</button><button data-go="#tools">Tools</button><button data-go="#help">Help</button><button id="qlock" class="alt">Lock</button></div></div>
 <main class="wrap">
-<section id="demo"><h2>Encrypt in your browser</h2><div class="panel"><div class="row"><div><label for="pw">Passphrase</label><input id="pw" type="password" value="correct horse battery"></div><div><label for="pt">Secret note</label><textarea id="pt">Recovery codes: 4821 9937 1156</textarea></div></div>
-<div class="btns"><button id="enc">Encrypt</button><button id="dec" class="alt">Decrypt</button></div><div id="out" class="out">Ciphertext appears here.</div><div id="st" class="status" role="status"></div></div></section>
+<section id="vault"><h2>Your vault</h2>
+<div id="locked" class="panel"><p class="sub">Create a vault passphrase on first use, or unlock an existing one. Everything is encrypted on this device. If you lose the passphrase, nobody can recover your data.</p>
+<label for="mp">Vault passphrase (min 8 characters)</label><input id="mp" type="password" autocomplete="current-password"><div class="btns"><button id="ub">Unlock</button><button id="pkx" class="alt">Disable passkey</button></div>
+<label for="bi">Restore from backup (.json)</label><input type="file" id="bi" accept=".json"><div id="ust" class="status" role="status"></div></div>
+<div id="open" hidden>
+<div class="stats"><div class="card"><b id="s1">0</b><span>files</span></div><div class="card"><b id="s2">0 B</b><span>stored</span></div><div class="card"><b id="s3">-</b><span>last added</span></div><div class="card"><b id="pks">off</b><span>passkey</span></div></div>
+<div id="add" class="panel"><h3>Add files</h3><input type="file" id="af" multiple aria-label="Files to encrypt"><button id="addb">Encrypt and store</button>
+<label for="nt">Or write a secure note</label><input id="nt" placeholder="Note title"><textarea id="nc" placeholder="Note text" rows="3"></textarea><button id="nsave" class="alt">Save encrypted note</button><div id="ast" class="status" role="status"></div></div>
+<div id="library" class="panel"><h3>Library</h3><input id="fq" placeholder="Search your files" aria-label="Search files"><div id="lib" class="lib"></div>
+<div id="vwb" class="viewer" hidden><b id="vwt"></b><pre id="vw"></pre><img id="vi" alt="Decrypted preview" hidden><button id="vx" class="alt">Close</button></div></div>
+<div class="panel"><h3>Settings</h3><div class="row"><div><label for="al">Auto-lock</label><select id="al"><option value="1">After 1 min idle</option><option value="5" selected>After 5 min idle</option><option value="15">After 15 min idle</option><option value="0">Never</option></select></div><div><label>Passkey second factor</label><button id="pkr" class="alt">Register passkey</button></div></div>
+<div class="btns"><button id="bx" class="alt">Export encrypted backup</button><button id="lk" class="alt">Lock now</button><button id="wipe" class="danger">Erase everything</button></div></div>
+<div class="panel"><h3>Tamper-evident audit log</h3><div id="log" class="out"></div><div class="btns"><button id="lv" class="alt">Verify chain</button><button id="lt" class="alt">Tamper test</button></div><div id="lst" class="status" role="status"></div></div>
+</div></section>
 
-<section id="agent"><h2>VaultMind: agentic security assistant</h2><p class="sub">Powered by Groq (free tier). VaultMind plans, calls tools (knowledge-base search, passphrase generator, password strength check) and answers using retrieved docs. Your key stays in your browser's local storage and goes only to api.groq.com. Get a free key at console.groq.com.</p>
-<div class="panel"><div class="row"><input id="key" type="password" placeholder="Groq API key (gsk_...)" aria-label="Groq API key"><button id="savekey" class="alt">Save key</button></div>
-<div id="chat" class="chat" aria-live="polite"></div><div class="row"><input id="q" placeholder="Ask: How is my data protected? Make me a strong passphrase." aria-label="Message"><button id="send">Send</button></div></div></section>
+<section id="agent"><h2>VaultMind: agentic security assistant</h2><p class="sub">Runs on Groq's free tier. It plans, calls tools (knowledge search, passphrase generator, vault stats) and answers from retrieved docs. Get a key at console.groq.com/keys. It is stored only in this browser and sent only to api.groq.com. Press / to jump to the chat box.</p>
+<div class="panel"><div class="row"><input id="key" type="password" placeholder="Groq API key (gsk_...)" aria-label="Groq API key" autocomplete="off"><button id="savekey" class="alt">Save and test key</button></div><div id="kst" class="status" role="status"></div>
+<div id="chat" class="chat" aria-live="polite"></div><div class="row"><input id="q" placeholder="Ask: How is my data protected?" aria-label="Message"><button id="send">Send</button></div></div></section>
 
-<section id="vault"><h2>Vault: files, passkey, audit trail</h2><p class="sub">Uses the passphrase above. Files are encrypted on your device and downloaded as .qvault; nothing is uploaded.</p>
-<div class="grid"><div class="panel"><b>Encrypt a file</b><input type="file" id="ef" aria-label="File to encrypt"><button id="efb">Encrypt and download</button><b>Decrypt a .qvault file</b><input type="file" id="df" accept=".qvault" aria-label="Vault file to decrypt"><button id="dfb" class="alt">Decrypt and download</button><div id="fst" class="status" role="status"></div></div>
-<div class="panel"><b>Passkey sign-in (device demo)</b><p class="status">Registers a passkey with your device (fingerprint, face, PIN or security key). Verification here is local; production verifies on the server.</p><div class="btns"><button id="pkr">Register passkey</button><button id="pka" class="alt">Sign in</button></div><div id="pst" class="status" role="status"></div></div>
-<div class="panel"><b>Tamper-evident audit log</b><div id="log" class="out"></div><div class="btns"><button id="lv">Verify chain</button><button id="lt" class="alt">Tamper entry 2</button></div><div id="lst" class="status" role="status"></div></div></div></section>
+<section id="tools"><h2>Tools</h2><div class="grid">
+<div class="panel"><h3>Passphrase generator</h3><select id="gl" aria-label="Length"><option>16</option><option selected>20</option><option>32</option></select><button id="gb">Generate</button><div id="go" class="out"></div><div class="btns"><button id="gc" class="alt">Copy</button></div><div id="gs" class="status"></div></div>
+<div class="panel" id="cnn"><h3>Neural file inspector</h3><p class="status">A convolution (Sobel, ReLU, pool) plus entropy runs on the file's bytes in your browser. Nothing is uploaded.</p><input type="file" id="file" aria-label="File to inspect"><div class="row maps"><canvas id="c1" width="128" height="128"></canvas><canvas id="c2" width="64" height="64"></canvas></div><div id="verdict" class="status"></div></div></div></section>
 
-<section id="cnn"><h2>Neural file inspector</h2><p class="sub">Drop any file. A convolution layer (Sobel kernel, ReLU, max-pool) runs on its byte map in your browser, plus Shannon entropy. Encrypted or packed files look like uniform noise. The Docker backend runs a full PyTorch CNN on the same idea.</p>
-<div class="panel"><input type="file" id="file" aria-label="File to inspect"><div class="row maps"><canvas id="c1" width="128" height="128"></canvas><canvas id="c2" width="64" height="64"></canvas></div><div id="verdict" class="status"></div></div></section>
-
-<section id="stack"><h2>Architecture</h2><div class="grid">
-<div class="card"><h3>Frontend</h3><p>Static site on GitHub Pages. WebCrypto, WebAuthn-ready, in-browser RAG and agent loop.</p></div>
-<div class="card"><h3>API (FastAPI)</h3><p>/chat with Groq tool-calling, /rag search, /scan CNN inference, rate limited.</p></div>
-<div class="card"><h3>RAG</h3><p>Security knowledge base ranked by TF-IDF; swap in Qdrant or Chroma for embeddings.</p></div>
-<div class="card"><h3>CNN</h3><p>PyTorch byte-image classifier flags encrypted, packed or anomalous files.</p></div>
-<div class="card"><h3>Docker</h3><p>docker compose up runs API and web server with a non-root user and healthcheck.</p></div>
-<div class="card"><h3>Zero trust</h3><p>Keys never leave the device; the server stores ciphertext and signed audit entries.</p></div></div></section>
+<section id="help"><h2>Help and checklist</h2>
+<details><summary>How is my data protected?</summary><p>A key is derived from your passphrase (PBKDF2, 250,000 rounds, random salt). Each file and its name are encrypted with AES-256-GCM before they are saved in this browser's database. Without the passphrase they are unreadable.</p></details>
+<details><summary>Where are my files stored?</summary><p>In this browser's IndexedDB on this device. Use Export encrypted backup to move them elsewhere; the backup stays encrypted.</p></details>
+<details><summary>I forgot my passphrase</summary><p>It cannot be recovered. That is the zero-knowledge guarantee. Erase everything and start a new vault.</p></details>
+<details><summary>Shortcuts</summary><p>/ focuses the AI chat. L locks the vault. The bar at the top jumps between sections. The vault also auto-locks when idle.</p></details>
+<details><summary>Security checklist</summary><p>Use 16+ random characters. Register a passkey. Export a backup after big changes. Keep your device updated. Never share your Groq key.</p></details></section>
 </main>
-<footer class="wrap"><p><a href="SECURITY.md">Security policy</a> · MIT licence · <a href="https://github.com/Nikhil-creat/quantavault">Source</a></p><div class="cred"><img src="logo.svg" alt="" width="28" height="28"><div><b>Designed &amp; developed by NIKHIL CHARY SRIRAMOJU</b><br>BTech final year, Computer Science &amp; Engineering<br><a href="https://github.com/Nikhil-creat">GitHub</a> · <a href="https://in.linkedin.com/in/nikhil-chary-sriramoju-95041b38a">LinkedIn</a> · <a href="mailto:sriramojunikhil66@gmail.com">Email</a></div></div>
-<p>Educational project. Losing your passphrase means losing your data, by design.</p></footer>
+<footer class="wrap"><div class="cred"><img src="logo.svg" alt="" width="28" height="28"><div><b>Designed &amp; developed by NIKHIL CHARY SRIRAMOJU</b><br>BTech final year, Computer Science &amp; Engineering<br><a href="https://github.com/Nikhil-creat">GitHub</a> · <a href="https://in.linkedin.com/in/nikhil-chary-sriramoju-95041b38a">LinkedIn</a> · <a href="mailto:sriramojunikhil66@gmail.com">Email</a></div></div>
+<p><a href="SECURITY.md">Security policy</a> · MIT licence · <a href="https://github.com/Nikhil-creat/quantavault">Source</a></p></footer>
 <script src="app.js"></script></body></html>
