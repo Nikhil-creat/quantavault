@@ -34,3 +34,5 @@ section{scroll-margin-top:70px}
 .tabs{display:flex;gap:8px;margin:10px 0}.tab{background:transparent;color:var(--mute);border:1px solid var(--line)}.tab.on{background:linear-gradient(90deg,var(--a),var(--b));color:#04101a;border:0}
 .drop{border:2px dashed var(--b);border-radius:12px;padding:14px;text-align:center}.drop p{margin:0 0 8px;color:var(--mute);font-size:14px}
 #qc{margin:0}#qc button{padding:5px 12px;font-size:13px;border-radius:99px}.chk{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--mute)}.chk input{width:auto}
+body.priv main,body.priv header,body.priv footer{filter:blur(22px)}
+pre.out{white-space:pre-wrap;max-height:220px;overflow:auto}

@@ -30,12 +30,12 @@ if(!m){const salt=crypto.getRandomValues(new Uint8Array(16)),k=await derive(pw,s
 else{const k=await derive(pw,m.salt);try{await dcr(k,m.v.iv,m.v.ct)}catch(e){bumpFail();audit("failed unlock");return msg("ust","Wrong passphrase.","bad")}
 const pk=localStorage.getItem("pk");if(pk){msg("ust","Confirm with your passkey...");try{await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:unb(pk)}],userVerification:"preferred",timeout:6e4}})}catch(e){return msg("ust","Passkey check failed ("+e.name+"). Try again, or use Disable passkey.","bad")}}
 KEY=k;audit("unlocked")}
-localStorage.removeItem("qvfail");$("mp").value="";msg("ust","");show();await render();arm();showTasks();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}catch(e){msg("ust","Error: "+e.message,"bad")}}
-function lock(){KEY=null;clearTimeout(timer);$("lib").replaceChildren();$("vwb").hidden=true;$("vw").textContent="";show();showTasks();audit("locked")}
+localStorage.removeItem("qvfail");$("mp").value="";msg("ust","");show();await render();arm();showTasks();gkLoad();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}catch(e){msg("ust","Error: "+e.message,"bad")}}
+function lock(){KEY=null;GK="";aiReset();clearTimeout(timer);$("lib").replaceChildren();$("vwb").hidden=true;$("vw").textContent="";show();showTasks();audit("locked")}
 function arm(){clearTimeout(timer);const m=+$("al").value;if(KEY&&m)timer=setTimeout(lock,m*6e4)}
 $("ub").onclick=unlock;$("mp").onkeydown=e=>{if(e.key==="Enter")unlock()};$("lk").onclick=lock;
 $("pkx").onclick=async()=>{try{const m=await dbGet("meta","vault");if(!m)return msg("ust","No vault yet.");await dcr(await derive($("mp").value,m.salt),m.v.iv,m.v.ct);localStorage.removeItem("pk");show();audit("passkey removed");msg("ust","Passkey requirement removed.","ok")}catch(e){msg("ust","Enter your correct passphrase first.","bad")}};
-$("pkr").onclick=async()=>{try{if(!window.PublicKeyCredential)return msg("ast","Passkeys are not supported here.","bad");const c=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"QuantaVault"},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:"vault-user",displayName:"Vault user"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{userVerification:"preferred",residentKey:"preferred"},timeout:6e4}});localStorage.setItem("pk",b64(new Uint8Array(c.rawId)));show();audit("passkey registered");msg("ast","Passkey registered. It is now required to unlock.","ok")}catch(e){msg("ast","Passkey cancelled: "+e.name,"bad")}};
+$("pkr").onclick=async()=>{try{if(!window.PublicKeyCredential)return msg("ast","Passkeys are not supported here.","bad");const c=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"QuantaVault"},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:"vault-user",displayName:"Vault user"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{userVerification:"preferred",residentKey:"preferred"},timeout:6e4}});localStorage.setItem("pk",b64(new Uint8Array(c.rawId)));show();audit("passkey registered");showSec();msg("ast","Passkey registered. It is now required to unlock.","ok")}catch(e){msg("ast","Passkey cancelled: "+e.name,"bad")}};
 /* files */
 async function put(name,type,bytes){const a=await enc(KEY,bytes),m=await enc(KEY,E.encode(JSON.stringify({name,type})));await dbPut("files",{id:crypto.randomUUID(),t:Date.now(),size:bytes.length,iv:a.iv,ct:a.ct,niv:m.iv,nct:m.ct})}
 let adding=false;
@@ -54,15 +54,15 @@ out.sort((a,b)=>b.t-a.t);STATS={files:out.length,bytes};$("s1").textContent=out.
 const q=$("fq").value.toLowerCase(),L=$("lib"),sh=out.filter(o=>o.m.name.toLowerCase().includes(q));L.replaceChildren();
 if(!sh.length){const p=document.createElement("p");p.className="status";p.textContent=out.length?"No match.":"No files yet. Add one above.";L.append(p)}
 for(const o of sh){const d=document.createElement("div"),n=document.createElement("span"),s=document.createElement("span"),b=document.createElement("span");d.className="item";n.className="nm";n.textContent=o.m.name;s.className="status";s.textContent=fmt(o.size)+" · "+new Date(o.t).toLocaleString();b.className="btns";
-for(const[a,l]of[["view","Open"],["dl","Download"],["rm","Delete"]]){const x=document.createElement("button");x.textContent=l;x.dataset.act=a;x.dataset.id=o.id;if(a!=="view")x.className="alt";b.append(x)}d.append(n,s,b);L.append(d)}}
+for(const[a,l]of[["view","Open"],...(/^text\//.test(o.m.type)?[["sum","AI summary"]]:[]),["dl","Download"],["rm","Delete"]]){const x=document.createElement("button");x.textContent=l;x.dataset.act=a;x.dataset.id=o.id;if(a!=="view")x.className="alt";b.append(x)}d.append(n,s,b);L.append(d)}}
 $("fq").oninput=render;
 $("lib").onclick=async e=>{const a=e.target.dataset.act;if(!a||!KEY)return;try{const r=await dbGet("files",e.target.dataset.id);
-if(a==="rm"){if(confirm("Delete this file permanently?")){await dbDel("files",r.id);audit("file deleted");render()}return}
+if(a==="sum")return summarize(r);if(a==="rm"){if(confirm("Delete this file permanently?")){await dbDel("files",r.id);audit("file deleted");render()}return}
 const m=JSON.parse(D.decode(await dcr(KEY,r.niv,r.nct))),pt=new Uint8Array(await dcr(KEY,r.iv,r.ct));
 if(a==="view"&&(m.type.startsWith("text/")||m.type.startsWith("image/"))){const img=m.type.startsWith("image/");$("vwt").textContent=m.name;$("vw").hidden=img;$("vi").hidden=!img;if(img){if($("vi").src)URL.revokeObjectURL($("vi").src);$("vi").src=URL.createObjectURL(new Blob([pt],{type:m.type}))}else $("vw").textContent=D.decode(pt);$("vwb").hidden=false;$("vwb").scrollIntoView()}
 else save(pt,m.name,m.type);audit("opened file");arm()}catch(x){msg("ast","Could not decrypt: "+x.message,"bad")}};
 $("vx").onclick=()=>{$("vwb").hidden=true;$("vw").textContent="";if($("vi").src){URL.revokeObjectURL($("vi").src);$("vi").removeAttribute("src")}};
-$("bx").onclick=async()=>{const m=await dbGet("meta","vault"),rows=await dbAll("files"),tk=await dbGet("meta","tasks");save(E.encode(JSON.stringify({v:2,tasks:tk?{iv:b64(tk.iv),ct:b64(tk.ct)}:null,meta:{salt:b64(m.salt),iv:b64(m.v.iv),ct:b64(m.v.ct)},files:rows.map(r=>({id:r.id,t:r.t,size:r.size,iv:b64(r.iv),ct:b64(r.ct),niv:b64(r.niv),nct:b64(r.nct)}))})),"quantavault-backup.json","application/json");audit("backup exported");msg("ast","Encrypted backup (files and tasks) downloaded.","ok")};
+$("bx").onclick=async()=>{const m=await dbGet("meta","vault"),rows=await dbAll("files"),tk=await dbGet("meta","tasks");save(E.encode(JSON.stringify({v:2,tasks:tk?{iv:b64(tk.iv),ct:b64(tk.ct)}:null,meta:{salt:b64(m.salt),iv:b64(m.v.iv),ct:b64(m.v.ct)},files:rows.map(r=>({id:r.id,t:r.t,size:r.size,iv:b64(r.iv),ct:b64(r.ct),niv:b64(r.niv),nct:b64(r.nct)}))})),"quantavault-backup.json","application/json");localStorage.setItem("qvbk",Date.now());audit("backup exported");showSec();msg("ast","Encrypted backup (files and tasks) downloaded.","ok")};
 $("bi").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text()),m=await dbGet("meta","vault");
 if(m&&b64(m.salt)!==j.meta.salt)return msg("ust","Backup is from a different vault.","bad");
 if(!m)await dbPut("meta",{k:"vault",salt:unb(j.meta.salt),v:{iv:unb(j.meta.iv),ct:unb(j.meta.ct)}});
@@ -99,14 +99,14 @@ check_password:({password})=>{let p=0;if(/[a-z]/.test(password))p+=26;if(/[A-Z]/
 const SPEC=[["search_kb","Search the QuantaVault security knowledge base",{query:{type:"string"}},["query"]],["generate_passphrase","Generate a random passphrase",{length:{type:"integer"}},[]],["vault_stats","Count and total bytes of encrypted files in the vault (no names)",{},[]],["check_password","Estimate password strength",{password:{type:"string"}},["password"]]].map(([name,description,properties,required])=>({type:"function",function:{name,description,parameters:{type:"object",properties,required}}}));
 
 const KEYRE=/^gsk_[A-Za-z0-9]{20,}$/,GURL="https://api.groq.com/openai/v1/";
-$("key").value=localStorage.getItem("gk")||"";
+$("key").value="";
 $("savekey").onclick=async()=>{const k=$("key").value.replace(/[\s"'`]/g,"");$("key").value=k;if(!KEYRE.test(k))return msg("kst","This does not look like a Groq key. It must start with gsk_ and contain no spaces.","bad");msg("kst","Testing key...");
-try{const r=await fetch(GURL+"models",{headers:{Authorization:"Bearer "+k}});if(r.ok){localStorage.setItem("gk",k);const l=await models(k);msg("kst","Key works. Auto-selected model: "+(l[0]||"none found")+". Saved in this browser only.","ok")}else msg("kst",r.status==401?"Groq rejected this key (401). Make a new key at console.groq.com/keys and paste the whole key.":"Groq error "+r.status,"bad")}catch(e){msg("kst","Network problem: "+e.message,"bad")}};
-const SYS={sec:"You are VaultMind, the security assistant for QuantaVault, built by Nikhil Chary Sriramoju. Use search_kb before answering product questions. Be concise. Never ask for real passwords or passphrases.",pa:"You are Quanta, a friendly personal assistant inside QuantaVault, built by Nikhil Chary Sriramoju. Reply briefly in the language the user writes in (English, Telugu or Tenglish). Use tools: get_datetime for date or time, calculate for maths, set_timer for reminders, add_task/list_tasks/complete_task for to-dos, save_note to store an encrypted note, search_kb for security questions. If a tool says the vault is locked, tell the user to unlock it. Never ask for passwords or secrets."};
+try{const r=await fetch(GURL+"models",{headers:{Authorization:"Bearer "+k}});if(r.ok){if(!KEY)return msg("kst","Key is valid. Unlock your vault, then save again so it is stored encrypted.","bad");await storeKey(k);const l=await models(k);msg("kst","Key works. Auto-selected model: "+(l[0]||"none found")+". Stored encrypted in your vault.","ok")}else msg("kst",r.status==401?"Groq rejected this key (401). Make a new key at console.groq.com/keys and paste the whole key.":"Groq error "+r.status,"bad")}catch(e){msg("kst","Network problem: "+e.message,"bad")}};
+const SYS={sec:"You are VaultMind, the security assistant for QuantaVault, built by Nikhil Chary Sriramoju. Use search_kb before answering product questions. Be concise. Never ask for real passwords or passphrases.",pa:"You are Quanta, a friendly personal assistant inside QuantaVault, built by Nikhil Chary Sriramoju. Reply briefly in the language the user writes in (English, Telugu or Tenglish). Use tools: get_datetime for date or time, calculate for maths, set_timer for reminders, add_task/list_tasks/complete_task for to-dos, save_note to store an encrypted note, search_kb for security questions, search_vault to look inside the user's notes (only if they allowed it), security_report for vault health. If a tool says the vault is locked, tell the user to unlock it. Never ask for passwords or secrets."};
 const H={sec:[{role:"system",content:SYS.sec}],pa:[{role:"system",content:SYS.pa}]},LOGS={};let MODE="sec",hist=H.sec;
 function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang=$("vl").value;speechSynthesis.speak(u)}catch(e){}}
 function add(c,t,nolog){const d=document.createElement("div");d.className="m "+c;d.textContent=t;$("chat").append(d);$("chat").scrollTop=1e9;if(!nolog)(LOGS[MODE]=LOGS[MODE]||[]).push([c,t]);if(c==="a"&&!nolog&&$("spk").checked)speak(t)}
-async function groq(body,k){for(let a=0;a<3;a++){const c=new AbortController(),t=setTimeout(()=>c.abort(),3e4);
+async function groq(body,k){body=prep(body);for(let a=0;a<3;a++){const c=new AbortController(),t=setTimeout(()=>c.abort(),3e4);
 try{const r=await fetch(GURL+"chat/completions",{method:"POST",signal:c.signal,headers:{"Content-Type":"application/json",Authorization:"Bearer "+k},body:JSON.stringify(body)});clearTimeout(t);
 if(r.ok)return r.json();if((r.status==429||r.status>=500)&&a<2){await sleep(1500*(a+1));continue}
 let m="";try{m=(await r.json()).error.message}catch(e){}{const x=new Error(r.status==401?"Invalid Groq key (401). Save a fresh key above.":"Groq "+r.status+": "+m);x.status=r.status;throw x}}
@@ -119,7 +119,7 @@ while(l.length){try{const j=await groq({model:l[0],messages:hist,tools:specFor()
 catch(e){if(e.status===404||e.status===403||(e.status===400&&/model|tool/i.test(e.message))){add("t","Skipping "+l[0]+" ("+e.status+")");l.shift();localStorage.setItem("gml",JSON.stringify(l));continue}throw e}}
 throw new Error("No usable Groq model found for this key. Check console.groq.com/settings/limits.")}
 let busy=false;
-async function ask(){const q=$("q").value.trim(),k=localStorage.getItem("gk");if(!q||busy)return;if(!k)return add("t","Save a working Groq key first.");
+async function ask(){const q=$("q").value.trim(),k=GK;if(!q||busy)return;if(!k)return add("t","Unlock the vault and save your Groq key first.");
 busy=true;$("send").disabled=true;$("q").value="";add("u",q);hist.push({role:"user",content:q});
 while(hist.length>14){const i=hist.findIndex((m,j)=>j>1&&m.role==="user");if(i<0)break;hist.splice(1,i-1)}
 try{for(let i=0;i<5;i++){const m=(await chatCall(k)).choices[0].message;hist.push(m);
@@ -185,14 +185,64 @@ if(!confirm("Re-encrypt everything with the new passphrase? Keep this page open 
 const salt=crypto.getRandomValues(new Uint8Array(16)),nk=await derive(np,salt),rows=await dbAll("files"),nr=[];
 for(const r of rows){const pt=new Uint8Array(await dcr(KEY,r.iv,r.ct)),mt=new Uint8Array(await dcr(KEY,r.niv,r.nct)),a=await enc(nk,pt),b=await enc(nk,mt);nr.push({...r,iv:a.iv,ct:a.ct,niv:b.iv,nct:b.ct})}
 const tk=await dbGet("meta","tasks");let nt=null;if(tk){const e=await enc(nk,new Uint8Array(await dcr(KEY,tk.iv,tk.ct)));nt={k:"tasks",iv:e.iv,ct:e.ct}}
+const gk=await dbGet("meta","gk");let ng=null;if(gk){const e=await enc(nk,new Uint8Array(await dcr(KEY,gk.iv,gk.ct)));ng={k:"gk",iv:e.iv,ct:e.ct}}
 const v=await enc(nk,E.encode("QV-OK")),d=await db;
-await new Promise((res,rej)=>{const t=d.transaction(["files","meta"],"readwrite");nr.forEach(r=>t.objectStore("files").put(r));t.objectStore("meta").put({k:"vault",salt,v});if(nt)t.objectStore("meta").put(nt);t.oncomplete=res;t.onerror=t.onabort=()=>rej(t.error||new Error("write failed"))});
+await new Promise((res,rej)=>{const t=d.transaction(["files","meta"],"readwrite");nr.forEach(r=>t.objectStore("files").put(r));t.objectStore("meta").put({k:"vault",salt,v});if(nt)t.objectStore("meta").put(nt);if(ng)t.objectStore("meta").put(ng);t.oncomplete=res;t.onerror=t.onabort=()=>rej(t.error||new Error("write failed"))});
 KEY=nk;$("op").value="";$("np").value="";msg("nps","");audit("passphrase changed");msg("pst","Passphrase changed. Old backups need the old passphrase, so export a fresh backup now.","ok");await render()}catch(e){msg("pst","Change failed, nothing was modified: "+e.message,"bad")}};
 $("bg").checked=localStorage.getItem("qvbg")!=="0";$("bg").onchange=()=>localStorage.setItem("qvbg",$("bg").checked?"1":"0");
 let hid=0;document.addEventListener("visibilitychange",()=>{if(document.hidden)hid=Date.now();else if(KEY&&hid&&$("bg").checked&&Date.now()-hid>3e4)lock()});
 async function usage(){try{const e=await navigator.storage.estimate();$("su").textContent="Browser storage used: "+fmt(e.usage||0)+" of about "+fmt(e.quota||0)}catch(x){}}
 const r0=render;render=async function(){await r0();usage()};
 const gc0=$("gc").onclick;$("gc").onclick=async()=>{await gc0();setTimeout(()=>{try{navigator.clipboard.writeText("")}catch(e){}},3e4);msg("gs","Copied. Clipboard is cleared in 30 seconds.","ok")};
+
+/* ---- v8: AI privacy, vault RAG, security health, key protection ---- */
+let GK="";
+const luhn=d=>{let s=0,al=false;for(let i=d.length-1;i>=0;i--){let n=+d[i];if(al){n*=2;if(n>9)n-=9}s+=n;al=!al}return s%10===0};
+function redact(t){let n=0;const c=(re,f)=>{t=t.replace(re,(...a)=>{const r=f(...a);if(r!==a[0])n++;return r})};
+c(/\b(?:gsk_|sk-|ghp_|github_pat_|AKIA)[A-Za-z0-9_-]{10,}/g,()=>"[SECRET]");
+c(/\b(pass(?:word|phrase)?|pwd|pin|cvv|otp|secret)\s*[:=]\s*\S+/gi,(m,k)=>k+": [REDACTED]");
+c(/[\w.+-]+@[\w-]+\.[\w.-]+/g,()=>"[EMAIL]");
+c(/\b(?:\d[ -]?){12,18}\d\b/g,m=>{const d=m.replace(/\D/g,"");return d.length>=13&&d.length<=19&&luhn(d)?"[CARD]":/^\d{12}$/.test(d)?"[ID-NUMBER]":m});
+c(/\b[A-Z]{5}\d{4}[A-Z]\b/g,()=>"[PAN]");
+c(/(?:\+\d{1,3}[ -]?)?\b\d{10}\b/g,()=>"[PHONE]");
+return{text:t,count:n}}
+function setLedger(ms,n){const last=ms.filter(m=>m.role!=="system").slice(-6).map(m=>m.role+": "+(m.content||(m.tool_calls?"[tool call: "+m.tool_calls.map(t=>t.function.name).join(", ")+"]":""))).join("\n");$("lg").textContent="Sent to Groq. Items masked in this request: "+n+"\n\n"+last}
+function prep(body){if(!$("rd").checked){setLedger(body.messages,0);return body}let n=0;const ms=body.messages.map(m=>{if((m.role==="user"||m.role==="tool")&&typeof m.content==="string"){const r=redact(m.content);n+=r.count;return{...m,content:r.text}}return m});setLedger(ms,n);return{...body,messages:ms}}
+$("rd").checked=localStorage.getItem("qvrd")!=="0";$("rd").onchange=()=>localStorage.setItem("qvrd",$("rd").checked?"1":"0");
+/* key protection */
+function keyUi(){$("key").value="";$("key").placeholder=!KEY?"Unlock your vault first, then paste your Groq key":GK?"Groq key saved (encrypted). Paste a new one to replace.":"Groq API key (gsk_...)"}
+async function storeKey(k){const e=await enc(KEY,E.encode(k));await dbPut("meta",{k:"gk",iv:e.iv,ct:e.ct});GK=k;localStorage.removeItem("gk");keyUi()}
+async function gkLoad(){try{const m=await dbGet("meta","gk");if(m)GK=D.decode(await dcr(KEY,m.iv,m.ct));else{const o=localStorage.getItem("gk");if(o&&KEYRE.test(o))await storeKey(o)}}catch(e){}keyUi();showSec()}
+function aiReset(){H.sec=[{role:"system",content:SYS.sec}];H.pa=[{role:"system",content:SYS.pa}];hist=H[MODE];for(const k in LOGS)delete LOGS[k];$("lg").textContent="Nothing sent yet.";$("vc").checked=false;$("cr").replaceChildren();$("cs").value="";keyUi();setMode(MODE)}
+$("cc").onclick=aiReset;
+/* local RAG over the user's own notes */
+const TXT=m=>/^text\//.test(m.type)||/\.(txt|md|csv|json|log)$/i.test(m.name);
+async function vaultDocs(){const rows=await dbAll("files"),out=[];for(const r of rows){if(r.size>2e5)continue;try{const m=JSON.parse(D.decode(await dcr(KEY,r.niv,r.nct)));if(TXT(m))out.push({name:m.name,text:D.decode(await dcr(KEY,r.iv,r.ct))})}catch(e){}}return out}
+async function vsearch(q,k=3){const qs=new Set(tok(q)),ch=[];for(const d of await vaultDocs())for(const p of d.text.split(/\n\s*\n/)){const t=p.trim();if(t)ch.push({name:d.name,text:t.slice(0,400)})}
+const df=new Map();ch.forEach(c=>new Set(tok(c.text)).forEach(w=>df.set(w,(df.get(w)||0)+1)));
+return ch.map(c=>{let s=0;tok(c.text).forEach(x=>{if(qs.has(x))s+=Math.log(1+ch.length/df.get(x))});return{...c,s}}).filter(c=>c.s>0).sort((a,b)=>b.s-a.s).slice(0,k)}
+let cst;$("cs").oninput=()=>{clearTimeout(cst);cst=setTimeout(async()=>{const q=$("cs").value.trim(),R=$("cr");R.replaceChildren();if(!KEY||q.length<2)return;const res=await vsearch(q,5);
+if(!res.length){const p=document.createElement("p");p.className="status";p.textContent="No matches inside your text files.";R.append(p);return}
+for(const r of res){const d=document.createElement("div"),n=document.createElement("span"),t=document.createElement("span");d.className="item";n.className="nm";n.textContent=r.name;t.className="status";t.textContent=r.text;d.append(n,t);R.append(d)}},300)};
+Object.assign(TOOLS,{search_vault:async({query})=>{if(!KEY)return LK;if(!$("vc").checked)return "The user has not allowed vault search. Ask them to switch on 'Let the assistant search my vault notes' under AI privacy.";const r=await vsearch(String(query),3);audit("assistant searched vault ("+r.length+" hits)");return JSON.stringify(r.map(x=>({file:x.name,text:x.text})))},security_report:async()=>KEY?JSON.stringify(await secReport()):LK});
+SPEC.push(mk("search_vault","Search the user's decrypted vault notes for relevant snippets (only works if the user allowed it)",{query:{type:"string"}},["query"]),mk("security_report","Get the vault's security health score and failed checks",{},[]));
+/* AI summary with explicit consent */
+async function summarize(r){if(!GK)return msg("ast","Unlock the vault and save your Groq key first.","bad");try{const m=JSON.parse(D.decode(await dcr(KEY,r.niv,r.nct))),raw=D.decode(await dcr(KEY,r.iv,r.ct)).slice(0,6000),red=$("rd").checked?redact(raw):{text:raw,count:0};
+if(!confirm('Send "'+m.name+'" ('+red.text.length+" characters, "+red.count+" sensitive items masked) to Groq to summarize? It leaves your device."))return;
+msg("ast","Summarizing...");let l=[];try{l=JSON.parse(localStorage.getItem("gml")||"[]")}catch(e){}if(!l.length)l=await models(GK);
+const j=await groq({model:localStorage.getItem("gm")||l[0],messages:[{role:"system",content:"Summarize the user's note in 3 short bullet points and suggest 3 tags. Be concise."},{role:"user",content:red.text}],temperature:.2},GK);
+$("vwt").textContent="AI summary: "+m.name;$("vi").hidden=true;$("vw").hidden=false;$("vw").textContent=j.choices[0].message.content;$("vwb").hidden=false;$("vwb").scrollIntoView();audit("AI summary requested");msg("ast","Summary ready.","ok")}catch(e){msg("ast","Summary failed: "+e.message,"bad")}}
+/* security health */
+async function secReport(){const bk=+localStorage.getItem("qvbk")||0,al=+$("al").value,pers=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():false;let sens=0;try{for(const d of await vaultDocs())if(redact(d.text).count)sens++}catch(e){}
+const c=[["Passkey second factor",!!localStorage.getItem("pk"),20,"Register a passkey in Settings."],["Auto-lock when idle (15 min or less)",al>0&&al<=15,15,"Set auto-lock to 15 minutes or less."],["Lock when app is in the background",$("bg").checked,10,"Turn on lock-in-background."],["Encrypted backup in the last 14 days",bk>0&&Date.now()-bk<12096e5,20,"Export an encrypted backup."],["Storage protected from eviction",!!pers,10,"Install the app or allow persistent storage."],["AI masks sensitive data",$("rd").checked,15,"Turn on masking under AI privacy."],["Secure connection (HTTPS)",location.protocol==="https:"||location.hostname==="localhost",10,"Use the https:// address."]];
+return{score:c.reduce((a,x)=>a+(x[1]?x[2]:0),0),checks:c.map(x=>({check:x[0],ok:x[1],fix:x[1]?"":x[3]})),text_files_with_sensitive_data:sens,assistant_vault_search:$("vc").checked?"on":"off"}}
+async function showSec(){if(!KEY)return;const r=await secReport(),S=$("shs"),L=$("sh");S.replaceChildren();const a=document.createElement("div"),b=document.createElement("b"),sp=document.createElement("span");a.className="card";b.textContent=r.score+"/100";sp.textContent="security score";a.append(b,sp);S.append(a);L.replaceChildren();
+for(const x of r.checks){const p=document.createElement("p");p.className="status "+(x.ok?"ok":"bad");p.textContent=(x.ok?"OK: ":"Fix: ")+x.check+(x.ok?"":" - "+x.fix);L.append(p)}
+const q=document.createElement("p");q.className="status";q.textContent=r.text_files_with_sensitive_data+" text file(s) contain sensitive-looking data (stored encrypted).";L.append(q)}
+$("shr").onclick=showSec;
+let sst;const r1=render;render=async function(){await r1();clearTimeout(sst);sst=setTimeout(showSec,400)};["al","bg","rd"].forEach(i=>$(i).addEventListener("change",showSec));
+document.addEventListener("visibilitychange",()=>document.body.classList.toggle("priv",document.hidden));
+keyUi();
 
 draw();show();
 dbGet("meta","vault").then(m=>{$("ub").textContent=m?"Unlock":"Create vault"}).catch(e=>msg("ust",e.message+". Private browsing may block storage.","bad"));

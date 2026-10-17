@@ -27,6 +27,9 @@ Encrypted backup now includes your to-do list (tasks) as well as files. Restorin
 ## v7
 Change passphrase (atomic re-encryption of files, names and tasks), persistent unlock lockout, strength meter, lock-when-backgrounded, storage usage, clipboard auto-clear, CI workflow and backend unit tests.
 
+## v8: AI + privacy
+Sensitive-data masking before any text goes to the AI (cards via Luhn, ID numbers, phones, emails, PAN, passwords, API keys), a visible "last request" ledger, assistant tools search_vault (local RAG over your own notes, off by default) and security_report, consent-gated AI summaries, a security score, Groq key stored encrypted inside the vault, AI chat wiped on lock, privacy blur when the app is backgrounded, stricter CSP and no-referrer.
+
 ## Roadmap (not built yet)
 Hybrid ML-KEM + X25519 key exchange, server-side passkey verification, multi-device encrypted sync, a trained CNN model.
 
